@@ -1,0 +1,5 @@
+const express=require('express'); const cors=require('cors'); const {ApolloServer}=require('@apollo/server'); const {expressMiddleware}=require('@apollo/server/express4'); const {ApolloServerPluginDrainHttpServer}=require('@apollo/server/plugin/drainHttpServer'); const http=require('http');
+const db=require('./db'); const {typeDefs,resolvers}=require('./schema'); const createLoaders=require('./loaders');
+async function createApp(){ const app=express(); const httpServer=http.createServer(app); const server=new ApolloServer({typeDefs,resolvers,plugins:[ApolloServerPluginDrainHttpServer({httpServer})]}); await server.start(); app.use('/graphql',cors(),express.json(),expressMiddleware(server,{context:async()=>({db,loaders:createLoaders(db)})})); app.get('/health',(_,res)=>res.json({ok:true,service:'SchoolSync GraphQL API'})); return {app,httpServer,server}; }
+if(require.main===module){ createApp().then(({httpServer})=>httpServer.listen({port:4000},()=>console.log('SchoolSync GraphQL API: http://localhost:4000/graphql'))).catch(err=>{console.error(err);process.exit(1)}); }
+module.exports={createApp};
